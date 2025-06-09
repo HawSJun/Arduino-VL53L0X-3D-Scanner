@@ -1,55 +1,65 @@
 #include <Wire.h>
 #include <Adafruit_VL53L0X.h>
-#include <LiquidCrystal_I2C.h>
+#include <LiquidCrystal_I2C.h>  // LCD 라이브러리
 
+// 객체 생성
 Adafruit_VL53L0X lox = Adafruit_VL53L0X();
-LiquidCrystal_I2C lcd(0x27, 16, 2);
-
-VL53L0X_RangingMeasurementData_t measure; // 라이브러리 안에 헤더파일안에 구조체 선언되어있음.
+LiquidCrystal_I2C lcd(0x27, 16, 2);  // I2C LCD 주소 0x27, 16x2
 
 void setup() {
-  Serial.begin(9600);
-  Wire.begin();
+  Serial.begin(115200);
 
-  lcd.init();
-  lcd.backlight();
-
-  if (!lox.begin()) {
-    Serial.println("센서 초기화 실패!");
-    lcd.setCursor(0, 0);
-    lcd.print("센서 오류");
-    while (1);
+  while (!Serial) {
+    delay(1);  // USB 연결 대기 (native USB 보드용)
   }
 
+  // LCD 초기화
+  lcd.init();
+  lcd.backlight();
   lcd.setCursor(0, 0);
-  lcd.print("VL53L0X Ready");
+  lcd.print("VL53L0X Start...");
+
+  // 센서 초기화
+  Serial.println("Adafruit VL53L0X test");
+  if (!lox.begin()) {
+    Serial.println(F("Failed to boot VL53L0X"));
+    lcd.clear();
+    lcd.print("Sensor Fail");
+    while (1);  // 초기화 실패 시 멈춤
+  }
+
+  Serial.println(F("VL53L0X\n\n"));
+  lcd.clear();
+  lcd.print("Sensor Ready");
   delay(1000);
   lcd.clear();
 }
 
 void loop() {
-  lox.rangingTest(&measure, false);  // 측정 실행
+  
+  VL53L0X_RangingMeasurementData_t measure;
 
-  if (measure.RangeStatus == 0) {
-    int dist = measure.RangeMilliMeter;
+  Serial.print("Reading a measurement... ");
+  lox.rangingTest(&measure, false);
 
-    Serial.print("거리: ");
-    Serial.print(dist);
-    Serial.println(" mm");
+  if (measure.RangeStatus != 4) {
+    // 정상 측정
+    Serial.print("Distance (mm): ");
+    Serial.println(measure.RangeMilliMeter);
 
     lcd.setCursor(0, 0);
-    lcd.print("Distance:");
+    lcd.print("Distance:       ");  // 이전 글자 덮기 위해 공백 추가
     lcd.setCursor(0, 1);
-    lcd.print(dist);
-    lcd.print(" mm    ");
+    lcd.print(measure.RangeMilliMeter);
+    lcd.print(" mm     ");
   } else {
-    Serial.println("측정 실패");
+    Serial.println(" out of range ");
 
     lcd.setCursor(0, 0);
-    lcd.print("측정 실패       ");
+    lcd.print("Distance:       ");
     lcd.setCursor(0, 1);
-    lcd.print("               ");
+    lcd.print("Out of range   ");
   }
 
-  delay(2000);
+  delay(200);
 }

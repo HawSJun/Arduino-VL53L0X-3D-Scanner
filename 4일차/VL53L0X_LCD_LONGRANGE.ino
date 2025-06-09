@@ -7,7 +7,7 @@ VL53L0X sensor;
 LiquidCrystal_I2C lcd(0x27, 16, 2);  // LCD 주소 0x27, 16x2
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
   Wire.begin();
 
   lcd.init();
